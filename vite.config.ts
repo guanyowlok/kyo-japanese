@@ -21,6 +21,6 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',       // keeps build output in dist/
     },
-    base: mode === 'production' ? '/kyo-japanese/' : '/', // <-- important!
+    base:'/', // <-- important!
   };
 });
