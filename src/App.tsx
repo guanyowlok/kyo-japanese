@@ -445,21 +445,34 @@ function KanjiSection({ selectedKanji, setSelectedKanji }: { selectedKanji: any;
         <p className="text-gray-500">Leverage your Mandarin knowledge to master Kanji.</p>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-2">
-        {levels.map(l => (
-          <button
-            key={l}
-            onClick={() => {
-              setLevel(l);
-              setSelectedKanji(null);
-            }}
-            className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
-              level === l ? 'bg-emerald-600 text-white shadow-lg' : 'bg-white text-gray-500 border border-black/5 hover:bg-gray-50'
-            }`}
-          >
-            {l}
-          </button>
-        ))}
+      <div className="flex flex-wrap justify-center gap-3">
+        {levels.map(l => {
+          const isComingSoon = ['N4', 'N3', 'N2', 'N1'].includes(l);
+          return (
+            <button
+              key={l}
+              disabled={isComingSoon}
+              onClick={() => {
+                setLevel(l);
+                setSelectedKanji(null);
+              }}
+              className={`px-6 py-2 rounded-full text-sm font-bold transition-all relative group ${
+                level === l 
+                  ? 'bg-emerald-600 text-white shadow-lg' 
+                  : isComingSoon
+                    ? 'bg-gray-100 text-gray-300 border border-gray-200 cursor-not-allowed'
+                    : 'bg-white text-gray-500 border border-black/5 hover:bg-gray-50'
+              }`}
+            >
+              {l}
+              {isComingSoon && (
+                <span className="absolute -top-2 -right-2 bg-gray-400 text-[10px] text-white px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  Soon
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -477,7 +490,7 @@ function KanjiSection({ selectedKanji, setSelectedKanji }: { selectedKanji: any;
               <div className="text-4xl font-bold text-gray-900 group-hover:scale-110 transition-transform">
                 {item.kanji}
               </div>
-              <div className="text-sm font-medium text-emerald-600/60">
+              <div className="text-sm font-bold text-emerald-700">
                 {item.reading}
               </div>
             </button>
@@ -521,7 +534,13 @@ function KanjiSection({ selectedKanji, setSelectedKanji }: { selectedKanji: any;
                       <div className="h-4 bg-gray-100 rounded w-4/6"></div>
                     </div>
                   ) : (
-                    <p className="text-gray-600 leading-relaxed text-sm italic">
+                    <p className={`leading-relaxed text-sm ${
+                      explanation.includes("Rate limit") || 
+                      explanation.includes("API Key") || 
+                      explanation.includes("Failed to load")
+                        ? "text-rose-600 font-medium not-italic bg-rose-50 p-3 rounded-xl border border-rose-100" 
+                        : "text-gray-600 italic"
+                    }`}>
                       {explanation}
                     </p>
                   )}
