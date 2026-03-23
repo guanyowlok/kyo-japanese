@@ -226,95 +226,6 @@ function KanaSection({ isPlaying, setIsPlaying }: { isPlaying: boolean; setIsPla
     }
   };
 
-  if (showSummary) {
-    const pageSize = 25;
-    const totalPages = Math.ceil(quizHistory.length / pageSize);
-    const paginatedHistory = quizHistory.slice(summaryPage * pageSize, (summaryPage + 1) * pageSize);
-
-    return (
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-4xl mx-auto space-y-8"
-      >
-        <div className="bg-white p-8 rounded-3xl border border-black/5 shadow-xl space-y-8">
-          <div className="flex justify-between items-center">
-            <div className="space-y-1">
-              <h2 className="text-2xl font-bold text-gray-900">Quiz Summary</h2>
-              <p className="text-gray-500 text-sm">You got {score.correct} out of {score.total} correct!</p>
-            </div>
-            <button 
-              onClick={() => {
-                setShowSummary(false);
-                setIsPlaying(false);
-              }}
-              className="px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all"
-            >
-              Back to Menu
-            </button>
-          </div>
-
-          <div className="overflow-hidden rounded-2xl border border-gray-100">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  <th className="px-6 py-4">Type</th>
-                  <th className="px-6 py-4">Question</th>
-                  <th className="px-6 py-4">Your Answer</th>
-                  <th className="px-6 py-4">Correct Answer</th>
-                  <th className="px-6 py-4">Result</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {paginatedHistory.map((item, i) => (
-                  <tr key={i} className="text-sm hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-gray-500">{item.type}</td>
-                    <td className="px-6 py-4 text-xl font-bold text-gray-900">{item.question.kana}</td>
-                    <td className="px-6 py-4 font-mono">{item.answer}</td>
-                    <td className="px-6 py-4 font-mono text-emerald-600 font-bold">{item.question.romaji}</td>
-                    <td className="px-6 py-4">
-                      {item.isCorrect ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-600 font-bold">
-                          <CheckCircle2 className="w-4 h-4" /> Correct
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-rose-600 font-bold">
-                          <XCircle className="w-4 h-4" /> Wrong
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-4">
-              <button 
-                disabled={summaryPage === 0}
-                onClick={() => setSummaryPage(p => p - 1)}
-                className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30 transition-all"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <span className="text-sm font-bold text-gray-500">
-                Page {summaryPage + 1} of {totalPages}
-              </span>
-              <button 
-                disabled={summaryPage === totalPages - 1}
-                onClick={() => setSummaryPage(p => p + 1)}
-                className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30 transition-all"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            </div>
-          )}
-        </div>
-      </motion.div>
-    );
-  }
-
   if (!isPlaying) {
     return (
       <motion.div 
@@ -414,6 +325,95 @@ function KanaSection({ isPlaying, setIsPlaying }: { isPlaying: boolean; setIsPla
               </button>
             </div>
           </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (showSummary) {
+    const pageSize = 25;
+    const totalPages = Math.ceil(quizHistory.length / pageSize);
+    const paginatedHistory = quizHistory.slice(summaryPage * pageSize, (summaryPage + 1) * pageSize);
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-4xl mx-auto space-y-8"
+      >
+        <div className="bg-white p-8 rounded-3xl border border-black/5 shadow-xl space-y-8">
+          <div className="flex justify-between items-center">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-bold text-gray-900">Quiz Summary</h2>
+              <p className="text-gray-500 text-sm">You got {score.correct} out of {score.total} correct!</p>
+            </div>
+            <button 
+              onClick={() => {
+                setShowSummary(false);
+                setIsPlaying(false);
+              }}
+              className="px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all"
+            >
+              Back to Menu
+            </button>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-gray-100">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-4">Type</th>
+                  <th className="px-6 py-4">Question</th>
+                  <th className="px-6 py-4">Your Answer</th>
+                  <th className="px-6 py-4">Correct Answer</th>
+                  <th className="px-6 py-4">Result</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {paginatedHistory.map((item, i) => (
+                  <tr key={i} className="text-sm hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4 font-medium text-gray-500">{item.type}</td>
+                    <td className="px-6 py-4 text-xl font-bold text-gray-900">{item.question.kana}</td>
+                    <td className="px-6 py-4 font-mono">{item.answer}</td>
+                    <td className="px-6 py-4 font-mono text-emerald-600 font-bold">{item.question.romaji}</td>
+                    <td className="px-6 py-4">
+                      {item.isCorrect ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-600 font-bold">
+                          <CheckCircle2 className="w-4 h-4" /> Correct
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-rose-600 font-bold">
+                          <XCircle className="w-4 h-4" /> Wrong
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4">
+              <button 
+                disabled={summaryPage === 0}
+                onClick={() => setSummaryPage(p => p - 1)}
+                className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30 transition-all"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <span className="text-sm font-bold text-gray-500">
+                Page {summaryPage + 1} of {totalPages}
+              </span>
+              <button 
+                disabled={summaryPage === totalPages - 1}
+                onClick={() => setSummaryPage(p => p + 1)}
+                className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30 transition-all"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </div>
+          )}
         </div>
       </motion.div>
     );
