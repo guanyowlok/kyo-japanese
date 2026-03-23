@@ -9,6 +9,7 @@ import {
   BookOpen, 
   Brain, 
   ChevronRight, 
+  ChevronLeft,
   RotateCcw, 
   CheckCircle2, 
   XCircle, 
@@ -25,7 +26,7 @@ import { getKanjiExplanation } from './services/geminiService';
 
 type Mode = 'KANA' | 'KANJI';
 type KanaSubMode = 'INPUT' | 'CHOICE_KANA_TO_ROMAJI' | 'CHOICE_ROMAJI_TO_KANA';
-type KanaType = 'HIRAGANA' | 'KATAKANA';
+type KanaType = 'HIRAGANA' | 'KATAKANA' | 'BOTH';
 
 export default function App() {
   const [activeMode, setActiveMode] = useState<Mode>('KANA');
@@ -47,7 +48,14 @@ export default function App() {
       {/* Navigation */}
       <nav className="bg-white border-b border-black/5 sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center gap-4">
-          <div className="flex items-center gap-2 flex-1">
+          <button 
+            onClick={() => {
+              setActiveMode('KANA');
+              setIsKanaPlaying(false);
+              setSelectedKanji(null);
+            }}
+            className="flex items-center gap-2 flex-1 hover:opacity-80 transition-opacity"
+          >
             <AnimatePresence mode="wait">
               {isSubView ? (
                 <motion.button
@@ -55,7 +63,10 @@ export default function App() {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
-                  onClick={handleBack}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleBack();
+                  }}
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
                 >
                   <ArrowLeft className="w-5 h-5" />
@@ -73,7 +84,7 @@ export default function App() {
               )}
             </AnimatePresence>
             <span className="font-semibold text-lg tracking-tight hidden sm:inline">Kyo-Japanese</span>
-          </div>
+          </button>
 
           <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
             <button
@@ -107,16 +118,6 @@ export default function App() {
           </div>
 
           <div className="flex-1 flex justify-end">
-            <button 
-              onClick={() => {
-                setActiveMode('KANA');
-                setIsKanaPlaying(false);
-                setSelectedKanji(null);
-              }}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
-            >
-              <Home className="w-5 h-5" />
-            </button>
           </div>
         </div>
       </nav>
@@ -150,13 +151,27 @@ function KanaSection({ isPlaying, setIsPlaying }: { isPlaying: boolean; setIsPla
   const [userInput, setUserInput] = useState('');
   const [feedback, setFeedback] = useState<'CORRECT' | 'WRONG' | null>(null);
   const [score, setScore] = useState({ correct: 0, total: 0 });
+  const [quizHistory, setQuizHistory] = useState<{ question: any; answer: string; isCorrect: boolean; type: string }[]>([]);
+  const [showSummary, setShowSummary] = useState(false);
+  const [summaryPage, setSummaryPage] = useState(0);
+  const [lastRomaji, setLastRomaji] = useState<string | null>(null);
 
-  const data = kanaType === 'HIRAGANA' ? HIRAGANA : KATAKANA;
+  const data = useMemo(() => {
+    if (kanaType === 'BOTH') return [...HIRAGANA, ...KATAKANA];
+    return kanaType === 'HIRAGANA' ? HIRAGANA : KATAKANA;
+  }, [kanaType]);
 
   const generateQuestion = () => {
-    const activeData = kanaType === 'HIRAGANA' ? HIRAGANA : KATAKANA;
-    const correct = activeData[Math.floor(Math.random() * activeData.length)];
+    const activeData = data;
+    let correct;
+    
+    // Prevent consecutive questions with the same romaji
+    do {
+      correct = activeData[Math.floor(Math.random() * activeData.length)];
+    } while (activeData.length > 1 && correct.romaji === lastRomaji);
+
     setCurrentQuestion(correct);
+    setLastRomaji(correct.romaji);
     setFeedback(null);
     setUserInput('');
 
@@ -175,6 +190,8 @@ function KanaSection({ isPlaying, setIsPlaying }: { isPlaying: boolean; setIsPla
 
   const startQuiz = () => {
     setIsPlaying(true);
+    setShowSummary(false);
+    setQuizHistory([]);
     setScore({ correct: 0, total: 0 });
     generateQuestion();
   };
@@ -186,6 +203,13 @@ function KanaSection({ isPlaying, setIsPlaying }: { isPlaying: boolean; setIsPla
       ? answer === currentQuestion.kana 
       : answer.toLowerCase().trim() === currentQuestion.romaji;
 
+    setQuizHistory(prev => [...prev, { 
+      question: currentQuestion, 
+      answer, 
+      isCorrect,
+      type: kanaType === 'BOTH' ? (HIRAGANA.some(h => h.kana === currentQuestion.kana) ? 'Hiragana' : 'Katakana') : kanaType.charAt(0) + kanaType.slice(1).toLowerCase()
+    }]);
+
     if (isCorrect) {
       setFeedback('CORRECT');
       setScore(s => ({ ...s, correct: s.correct + 1, total: s.total + 1 }));
@@ -195,12 +219,101 @@ function KanaSection({ isPlaying, setIsPlaying }: { isPlaying: boolean; setIsPla
         origin: { y: 0.7 },
         colors: ['#10b981', '#34d399']
       });
-      setTimeout(generateQuestion, 800);
+      setTimeout(generateQuestion, 400);
     } else {
       setFeedback('WRONG');
       setScore(s => ({ ...s, total: s.total + 1 }));
     }
   };
+
+  if (showSummary) {
+    const pageSize = 25;
+    const totalPages = Math.ceil(quizHistory.length / pageSize);
+    const paginatedHistory = quizHistory.slice(summaryPage * pageSize, (summaryPage + 1) * pageSize);
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-4xl mx-auto space-y-8"
+      >
+        <div className="bg-white p-8 rounded-3xl border border-black/5 shadow-xl space-y-8">
+          <div className="flex justify-between items-center">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-bold text-gray-900">Quiz Summary</h2>
+              <p className="text-gray-500 text-sm">You got {score.correct} out of {score.total} correct!</p>
+            </div>
+            <button 
+              onClick={() => {
+                setShowSummary(false);
+                setIsPlaying(false);
+              }}
+              className="px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all"
+            >
+              Back to Menu
+            </button>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-gray-100">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-4">Type</th>
+                  <th className="px-6 py-4">Question</th>
+                  <th className="px-6 py-4">Your Answer</th>
+                  <th className="px-6 py-4">Correct Answer</th>
+                  <th className="px-6 py-4">Result</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {paginatedHistory.map((item, i) => (
+                  <tr key={i} className="text-sm hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4 font-medium text-gray-500">{item.type}</td>
+                    <td className="px-6 py-4 text-xl font-bold text-gray-900">{item.question.kana}</td>
+                    <td className="px-6 py-4 font-mono">{item.answer}</td>
+                    <td className="px-6 py-4 font-mono text-emerald-600 font-bold">{item.question.romaji}</td>
+                    <td className="px-6 py-4">
+                      {item.isCorrect ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-600 font-bold">
+                          <CheckCircle2 className="w-4 h-4" /> Correct
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-rose-600 font-bold">
+                          <XCircle className="w-4 h-4" /> Wrong
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4">
+              <button 
+                disabled={summaryPage === 0}
+                onClick={() => setSummaryPage(p => p - 1)}
+                className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30 transition-all"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <span className="text-sm font-bold text-gray-500">
+                Page {summaryPage + 1} of {totalPages}
+              </span>
+              <button 
+                disabled={summaryPage === totalPages - 1}
+                onClick={() => setSummaryPage(p => p + 1)}
+                className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30 transition-all"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
 
   if (!isPlaying) {
     return (
@@ -245,7 +358,7 @@ function KanaSection({ isPlaying, setIsPlaying }: { isPlaying: boolean; setIsPla
                 </div>
               </div>
               <div className="flex gap-2">
-                {(['HIRAGANA', 'KATAKANA'] as KanaType[]).map(t => (
+                {(['HIRAGANA', 'KATAKANA', 'BOTH'] as KanaType[]).map(t => (
                   <button
                     key={t}
                     onClick={() => setKanaType(t)}
@@ -253,7 +366,7 @@ function KanaSection({ isPlaying, setIsPlaying }: { isPlaying: boolean; setIsPla
                       kanaType === t ? 'bg-emerald-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    Quiz {t.charAt(0) + t.slice(1).toLowerCase()}
+                    {t === 'BOTH' ? 'Both' : `Quiz ${t.charAt(0) + t.slice(1).toLowerCase()}`}
                   </button>
                 ))}
               </div>
@@ -313,15 +426,22 @@ function KanaSection({ isPlaying, setIsPlaying }: { isPlaying: boolean; setIsPla
       className="max-w-xl mx-auto space-y-8"
     >
       <div className="flex justify-between items-center">
-        <button 
-          onClick={() => setIsPlaying(false)}
-          className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm font-medium"
-        >
-          <RotateCcw className="w-4 h-4" /> Stop Quiz
-        </button>
-        <div className="bg-white px-4 py-1 rounded-full border border-black/5 text-sm font-bold text-emerald-600">
+        <div className="bg-emerald-600 px-4 py-1.5 rounded-full text-sm font-bold text-white shadow-lg shadow-emerald-200">
           {score.correct} / {score.total}
         </div>
+        <button 
+          onClick={() => {
+            if (score.total > 0) {
+              setShowSummary(true);
+              setSummaryPage(0);
+            } else {
+              setIsPlaying(false);
+            }
+          }}
+          className="px-4 py-1.5 bg-white rounded-full border border-black/5 text-rose-500 hover:bg-rose-50 transition-all flex items-center gap-2 text-sm font-bold shadow-sm"
+        >
+          <XCircle className="w-4 h-4" /> Stop Quiz
+        </button>
       </div>
 
       <div className="bg-white p-12 rounded-3xl border border-black/5 shadow-xl text-center space-y-8 relative overflow-hidden">
