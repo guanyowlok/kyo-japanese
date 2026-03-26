@@ -145,7 +145,7 @@ export default function App() {
 
 function KanaSection({ isPlaying, setIsPlaying }: { isPlaying: boolean; setIsPlaying: (v: boolean) => void; key?: string }) {
   const [kanaType, setKanaType] = useState<KanaType>('HIRAGANA');
-  const [subMode, setSubMode] = useState<KanaSubMode>('CHOICE_KANA_TO_ROMAJI');
+  const [subMode, setSubMode] = useState<KanaSubMode>('INPUT');
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
   const [options, setOptions] = useState<string[]>([]);
   const [userInput, setUserInput] = useState('');
